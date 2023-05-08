@@ -1,336 +1,212 @@
 /**
- * Napisati C++ program koji iz ulazne datoteke cita podatke o temperaturi u toku vikenda sa ski 
- * staza na Kopaoniku, Zlatiboru i Jahorini i odredjuje koji dani i na kojoj planini su idealni 
- * za skijanje a koji nisu. Neki idealni opseg temperature za skijanje je od -5 do 3 stepena.
+ * Napisati C++ program koji cita podatke o studentima iz ulazne datoteke i potom 
+ * za svakog studenta racuna prosek
  * 
- * Za svaku od planina postoji posebna datoteka cije ime se sastoji od imena planine i prosirenja
- * (ekstenzije) ".txt". U svakoj pojedinacnoj datoteci se u jednom redu nalaze podaci za jedan dan. 
- * Jedan red sadrzi redom ime_dana, datum, i potom izmerene temperature. Temperatura se meri na 
- * svakih sat vremena, pocevsi od 8 ujutru, do 8 uvece. Svi podaci su odvojeni razmakom.
+ * U ulaznoj datoteci "studenti.csv" se u svakom redu nalaze informacije o studentu: 
+ *     Ime,Prezime,Broj indeksa,Ocene 
+ * Pritom su ocene odvojene medjusobno razmacima.
  * 
- * Izgled jednog reda iz ulaznih datoteka "Kopaonik.txt" "Zlatibor.txt" "Jahorina.txt"
+ * Prilikom obrade podataka o studentima, mora se proveriti format indeksa da li je validan. Ako nije, zanemariti taj unos.
+ * Format indeksa je:
+ *     [[:alpha:]][[:alnum:]]{1,2}\s[[:digit:]]{1,3}\/[[:digit:]]{4}
  * 
- *     subota 01.02.  -15 -13 -10 -8 -3 0 -2 -3 2 2 -5 -7 -3
+ * U tri izlazne datoteke rasporediti studente u zavisnosti od proseka.
+ * Ukoliko je prosek > 9.00 potrebno je upisati studenta u datoteku "kandidati_stipendija.csv".
+ * Ukoliko je prosek > 8.00 i prosek <= 9.00 potrebno je upisati studenta u datoteku "kandidati_kredit.csv".
+ * U ostalim slucajevima upisati studenta u datoteku "ostali.csv".
+ * Format u izlaznoj datoteci treba da odgovara sledecem: Ime,Prezime,Broj_indeksa,prosek
  * 
- * Treba za svaki dan pronaci najnizu i najvisu dnevnu temperaturu. Ukoliko minimalna i maksimalna
- * temperatura upadaju u navedeni opseg, treba informacije za taj dan ispisati u datoteku 
- * "idealno.txt", u suprotnom u datoteku "lose.txt".
- *
- * Ispis u izlaznu datoteku treba da prati format:
- *     <ime_planine> [<ime_dana> <datum>] <min. temp.> >> <maks. temp.>
- * 
- * Primer ispisa u bilo kojoj od izlaznih datoteka "idealno.txt", "lose.txt":
- * 
- *     Kopaonik [subota 01.02.] -15 >> 2
- *
- * Treba napraviti jednu nit koja ce samo citati podatke iz ulaznih datoteka, jednu nit koja ce 
- * samo pisati spremljene podatke u izlazne datoteke i 4 niti radnika koji ce na osnovu podataka iz
- * ulaznih datoteka generisati sve neophodno za ispis u izlazne datoteke.
+ * Treba napraviti jednu nit koja ce samo citati redove ulazne podatke, jednu nit 
+ * koja ce samo pisati gotove podatke u izlazne datoteke i 10 niti radnika koji ce na osnovu redova
+ * iz ulazne datoteke generisati sve neophodno za ispis u izlaznu datoteku.
 */
 #include <iostream>
-#include <thread>
+#include <fstream>
+#include <regex>
+#include <vector>
 #include <mutex>
 #include <condition_variable>
-#include <vector>
-#include <queue>
-#include <fstream>
-#include <sstream>
-
-#define BR_RADNIKA 4
-#define BR_MERENJA_TEMPERATURE 13
-#define MINIMALNA_IDEALNA_TEMPERATURA -5
-#define MAKSIMALNA_IDEALNA_TEMPERATURA 3
+#include <thread>
+#include <numeric>
 
 using namespace std;
 
-class StanjeSkijalistaNaDan {
+class Student {
 private:
-    string planina;
-    string dan;
-    string datum;
-    vector<float> temperature;
-    float minimum, maksimum;
+    string firstname;
+    string lastname;
+    string index;
+    vector<int> grades;
+    double avg_grade;
 public:
-    StanjeSkijalistaNaDan(): minimum(0), maksimum(0) {
-        temperature.reserve(BR_MERENJA_TEMPERATURE);
-    }
-    void postaviPlaninu(string p) {
-        planina = p;
-    }
-    void postaviDan(string d) {
-        dan = d;
-    }
-    void postaviDatum(string d) {
-        datum = d;
-    }
-    void dodajTemperaturu(float t) {
-        temperature.push_back(t);
-        azurirajMinMaks();
-    }
-    float dobaviMinTemperaturu() {
-        return minimum;
-    }
-    float dobaviMaksTemperaturu() {
-        return maksimum;
+    Student() {}
+    Student(string name, string surname, string idx) {
+        firstname = name;
+        lastname = surname;
+        index = idx;
     }
 
-    bool daLiJeIdealanOpsegTemperatura() {
-        return (minimum >= MINIMALNA_IDEALNA_TEMPERATURA) && (maksimum <= MAKSIMALNA_IDEALNA_TEMPERATURA);
+    void setGrades(vector<int> grds) {
+        grades = grds;
+        calculateAvgGrade();
     }
 
-    friend ostream& operator<<(ostream &os, StanjeSkijalistaNaDan ss) {
-        return os << ss.planina << " " << "[" << ss.dan << " " << ss.datum << "] " << ss.minimum << " >> " << ss.maksimum << endl;
+    string getFirstname() {
+        return firstname;
     }
 
+    string getLastname(){
+        return lastname;
+    }
+
+    string getIndex() {
+        return index;
+    }
+
+    double getAvgGrade(){
+        return avg_grade;
+    }
+
+    friend ostream& operator<<(ostream& os, Student& s) {
+      os << s.firstname << " " << s.lastname << " " << s.index;
+      os << " ocene: ";
+      for(auto it = s.grades.begin(); it != s.grades.end(); it++) {
+        os << *it << " ";
+      }
+      os  << "prosek: " << s.avg_grade << endl;
+      return os;
+   }
 private:
-    void azurirajMinMaks() {
-        if (temperature.size() <= 0)
-            return;
-        else if (temperature.size() == 1) {
-            minimum = maksimum = temperature[0];
-        } else {
-            float poslednja_temperatura = temperature.back();
-            if (minimum > poslednja_temperatura) {
-                minimum = poslednja_temperatura;
-            }
-            if (maksimum < poslednja_temperatura) {
-                maksimum = poslednja_temperatura;
-            }
-        }
+    void calculateAvgGrade(){
+        avg_grade = accumulate(grades.begin(), grades.end(), 0.)/grades.size();
     }
 };
 
-/** Klasa koja modeluje "postansko sanduce" izmedju citaca i radnika.
-*/
 template<typename T>
-class RedoviIzDatoteke {
+class Data {
 private:
-    mutex podaci_mx;                       // propusnica za sinhronizaciju nad svim poljima klase
-    queue<T> redovi;
-    condition_variable podaci_spremni;
-    bool kraj;
+    mutex data_mtx;
+    vector<T> data;
+    bool end;
+    int data_producers_num;
+    condition_variable data_read;
 public:
-    RedoviIzDatoteke(): kraj(false) {}  // na pocetku nije kraj i nema radnika
-
-    void dodaj(T redIzDatoteke) {
-        unique_lock<mutex> propusnica(podaci_mx);
-        redovi.push(redIzDatoteke);
+    Data(): end(false), data_producers_num(0) {}
+    void add_data(T data_element) {
+        unique_lock<mutex> u(data_mtx);
+        data.push_back(data_element);
+        data_read.notify_one();
     }
+    bool remove_data(T &data_element) {
+        unique_lock<mutex> u(data_mtx);
+        data_read.wait(u, [this]{return !data.empty() || end;});
 
-    bool preuzmi(T &redIzDatoteke) {
-        unique_lock<mutex> propusnica(podaci_mx);
-        while (daLiCekamPodatke()) {
-            podaci_spremni.wait(propusnica);
-        }
-
-        if (jeLiKraj()) {
-            return false;  // signal pozivajucem okruzenju da nece vise biti podataka
-        }
-
-        redIzDatoteke = redovi.front();
-        redovi.pop();
-        return true;  // signal pozivajucem okruzenju da je podataka uspesno preuzet iz bafera
-    }
-
-    // Imamo jednu nit koja ce stvarati podatke u ovom baferu podataka, ona zna kada je kraj i dovoljno je da ona jednim pozivom ove metode objavi kraj za sve ostale
-    void objaviKraj() {
-        unique_lock<mutex> propusnica(podaci_mx);
-        kraj = true;
-        podaci_spremni.notify_all();  // za slucaj da postoje radnici koji cekaju na nove podatke, budjenje istih da ne cekaju ako nema vise podataka da se preuzme jer je kraj
-    }
-
-private:
-    /**
-     * Provera da li treba da cekamo podatke. Vraca istinu samo onda kada u kolekciji
-     * nema podataka ali istovremeno i nije objavljen kraj stvaranja podataka.
-    */
-    bool daLiCekamPodatke() {
-        return redovi.empty() && !kraj;
-    }
-
-    /**
-     * Provera da li smo zavrsili sa citanjem podataka. Vraca istinu samo onda kada nema vise podataka
-     * u kolekciji i sve niti stvaraoci podataka su se odjavili.
-    */
-    bool jeLiKraj() {
-        return redovi.empty() && kraj;
-    }
-};
-
-
-/** Klasa koja modeluje "postansko sanduce" izmedju radnika i pisaca.
-*/
-template<typename T>
-class PodaciZaIspis {
-private:
-    mutex podaci_mx;                       // propusnica za sinhronizaciju nad svim poljima klase
-    queue<T> stanjaSkijalista;
-    condition_variable podaci_spremni;
-    bool kraj;
-    int br_stvaralaca_podataka;
-public:
-    PodaciZaIspis(): kraj(false), br_stvaralaca_podataka(0) {}  // na pocetku nije kraj i nema radnika
-
-    void dodaj(T stanjeSkijalista) {
-        unique_lock<mutex> propusnica(podaci_mx);
-        stanjaSkijalista.push(stanjeSkijalista);
-    }
-
-    bool preuzmi(T &stanjeSkijalista) {
-        unique_lock<mutex> propusnica(podaci_mx);
-        while (daLiCekamPodatke()) {
-            podaci_spremni.wait(propusnica);
-        }
-
-        if (jeLiKraj()) {
+        if (the_end()) {
             return false;
         }
 
-        stanjeSkijalista = stanjaSkijalista.front();
-        stanjaSkijalista.pop();
+        data_element = data.back();
+        data.pop_back();
+
         return true;
     }
 
-    /**
-     * Ovu metodu pre pocetka svog rada treba da pozovu stvaraoci podataka ovog bafera.
-    */
-    void prijavaStvaraocaPodataka() {
-        unique_lock<mutex> propusnica(podaci_mx);
-        br_stvaralaca_podataka++;
+    bool the_end() {
+        return data.empty() && end;
     }
 
-    /**
-     * Ovu metodu na kraju svog rada treba da pozovu stvaraoci podataka ovog bafera.
-    */
-    void odjavaStvaraocaPodataka() {
-        unique_lock<mutex> propusnica(podaci_mx);
-        br_stvaralaca_podataka--;
-        if (!br_stvaralaca_podataka) {  // kada se desi odjava, proveravamo da li je broj stvaralaca pao na nula; ako jeste, znaci da nece biti novih podataka vise te treba objaviti kraj i probuditi uspavane niti
-            kraj = true;
-            podaci_spremni.notify_one();  // na izlazu moze da ceka samo nit koja pise u datoteku (u ovom konkretnom slucaju), pa je ovde dovoljan notify_ONE()
+    void add_worker() {
+        unique_lock<mutex> u(data_mtx);
+        data_producers_num++;
+    }
+
+    void remove_worker() {
+        unique_lock<mutex> u(data_mtx);
+        if (!(--data_producers_num)) {
+            end = true;
+            data_read.notify_all();
         }
     }
 
-private:
-    /**
-     * Provera da li treba da cekamo podatke. Vraca istinu samo onda kada u kolekciji
-     * nema podataka ali istovremeno i nije objavljen kraj stvaranja podataka.
-    */
-    bool daLiCekamPodatke() {
-        return stanjaSkijalista.empty() && !kraj;
-    }
-
-    /**
-     * Provera da li smo zavrsili sa citanjem podataka. Vraca istinu samo onda kada nema vise podataka
-     * u kolekciji i sve niti stvaraoci podataka su se odjavili.
-    */
-    bool jeLiKraj() {
-        return stanjaSkijalista.empty() && kraj;
-    }
 };
 
-void citac(vector<string> imena_ulaznih_datoteka, RedoviIzDatoteke<string>& redovi_iz_ulaznih_datoteka) {
-    for (string ime_ulazne_dat : imena_ulaznih_datoteka) {
-        ifstream ulazna_dat(ime_ulazne_dat);
-        cout << "CITAC: Obradjujem datoteku \"" << ime_ulazne_dat << "\"." << endl;
-
-        if(ulazna_dat.is_open()) {
-            string planina = ime_ulazne_dat.substr(0, ime_ulazne_dat.find(".txt"));
-            string red_datoteke;
-            while(getline(ulazna_dat, red_datoteke)) {  // citanje datoteke red po red
-                redovi_iz_ulaznih_datoteka.dodaj("" + planina + " " + red_datoteke); 
-            }
-
-            ulazna_dat.close();
-        } else
-            cerr << "CITAC: Nisam mogao da otvorim datoteku \"" << ime_ulazne_dat << "\" za citanje!\n";
+void reader(string input_file_name, Data<string>& raw_data) {
+    ifstream input_fs(input_file_name);
+    raw_data.add_worker();
+    while(!input_fs.eof()){
+        string s;
+        getline(input_fs, s);
+        raw_data.add_data(s);
     }
-
-    redovi_iz_ulaznih_datoteka.objaviKraj();  // citac je jedna jedina nit koja stvara podatke tako da je dovoljno da samo ona kada zavrsi posao objavi kraj
+    input_fs.close();
+    raw_data.remove_worker();
 }
 
-void radnik(RedoviIzDatoteke<string>& redovi_iz_ulaznih_datoteka, PodaciZaIspis<StanjeSkijalistaNaDan>& pripremljeni_podaci){
-    pripremljeni_podaci.prijavaStvaraocaPodataka();  // radnik stvara podatke za izlazni bafer tako da se i prijavljuje kod njega kao stvaralac podataka
-
-    string red_iz_datoteke;
-    while (redovi_iz_ulaznih_datoteka.preuzmi(red_iz_datoteke)) {
-        string rec;
-        float temperatura;
-        StanjeSkijalistaNaDan stanjeSk;
-        istringstream red_iz_datoteke_tok(red_iz_datoteke);
-
-        if (red_iz_datoteke_tok >> rec) {
-            stanjeSk.postaviPlaninu(rec);
-        } else 
-            continue;
-
-        if (red_iz_datoteke_tok >> rec) {
-            stanjeSk.postaviDan(rec);
-        } else 
-            continue;
-
-        if (red_iz_datoteke_tok >> rec) {
-            stanjeSk.postaviDatum(rec);
-        } else 
-            continue;
-        
-        bool greska_prilikom_citanja = false;
-        for (int i = 0; i < 13; i++) {
-            if (red_iz_datoteke_tok >> temperatura) {
-                stanjeSk.dodajTemperaturu(temperatura);
-            } else {
-                greska_prilikom_citanja = true;
-                break;
+void proccessing_data(Data<string>& raw_data, Data<Student>& proccessed_data){
+    regex r("([[:alpha:]]+),([[:alpha:]]+),([[:alpha:]][[:alnum:]]{1,2}\\s[[:digit:]]{1,3}\\/[[:digit:]]{4})");
+    regex gradeRegex(",([6-9]|10)");
+    smatch match;
+    smatch matchGrades;
+    vector<int> grades;
+    proccessed_data.add_worker();
+    string s;
+    while (raw_data.remove_data(s)) {
+        if(regex_search(s, match, r)) {
+            Student student = Student(match[1], match[2], match[3]);
+            while(regex_search(s, matchGrades, gradeRegex)) {
+                grades.push_back(atoi(matchGrades[1].str().c_str()));
+                s = matchGrades.suffix();
             }
+            student.setGrades(grades);
+            proccessed_data.add_data(student);
+            grades.resize(0);
         }
-        if (greska_prilikom_citanja)
-            continue;
-
-        pripremljeni_podaci.dodaj(stanjeSk);
     }
-
-    pripremljeni_podaci.odjavaStvaraocaPodataka();  // radnik se odjavljuje; poslednji radnik koji se odjavi uzrokuje objavu kraja u izlaznom baferu
+    proccessed_data.remove_worker();
 }
 
-void pisac(PodaciZaIspis<StanjeSkijalistaNaDan>& pripremljeni_podaci) {
-    ofstream idealno_dat("idealno.txt");
-    ofstream lose_dat;
-    StanjeSkijalistaNaDan stanjeSk;
-
-    if (idealno_dat.is_open()) {
-        lose_dat.open("lose.txt");
-        if (!lose_dat.is_open()) {
-		    cerr << "PISAC: Nisam mogao da otvorim datoteku \"lose.txt\" za pisanje! Zatvaram vec otvorenu \"idealno.txt\" datoteku i prekidam dalji rad.\n";
-            idealno_dat.close();
-            return;
-        }
-
-        while (pripremljeni_podaci.preuzmi(stanjeSk)) {
-            if (stanjeSk.daLiJeIdealanOpsegTemperatura()) {
-                idealno_dat << stanjeSk;
+void writer(Data<Student>& proccessed_data) {
+    ofstream output_fs_stip("kandidati_stipendija.csv");
+    ofstream output_fs_kred("kandidati_kredit.csv");
+    ofstream output_fs_ostali("ostali.csv");
+    Student student;
+    while (proccessed_data.remove_data(student)) {
+        if(student.getAvgGrade() > 9.0) {
+            if(student.getIndex() != "") {
+                output_fs_stip << student.getFirstname() << "," << student.getLastname() << "," << student.getIndex() << "," << student.getAvgGrade() << "\n";
             } else {
-                lose_dat << stanjeSk;
+                output_fs_stip << student.getFirstname() << "," << student.getLastname() << "," << student.getAvgGrade() << "\n";
+            }
+        } else if(student.getAvgGrade() > 8.0 && student.getAvgGrade() <= 9.0) {
+            if(student.getIndex() != "") {
+                output_fs_kred << student.getFirstname() << "," << student.getLastname() << "," << student.getIndex() << "," << student.getAvgGrade() << "\n";
+            } else {
+                output_fs_kred << student.getFirstname() << "," << student.getLastname() << "," << student.getAvgGrade() << "\n";
+            }
+        } else {
+            if(student.getIndex() != "") {
+                output_fs_ostali << student.getFirstname() << "," << student.getLastname() << "," << student.getIndex() << "," << student.getAvgGrade() << "\n";
+            } else {
+                output_fs_ostali << student.getFirstname() << "," << student.getLastname() << "," << student.getAvgGrade() << "\n";
             }
         }
-
-        lose_dat.close();
-        idealno_dat.close();
-    } else
-		cerr << "PISAC: Nisam mogao da otvorim datoteku \"idealno.txt\" za pisanje!\n";
+    }
+    output_fs_stip.close();
+    output_fs_kred.close();
+    output_fs_ostali.close();
 }
 
 
 int main() {
-    RedoviIzDatoteke<string> redovi_iz_ulaznih_datoteka;
-    PodaciZaIspis<StanjeSkijalistaNaDan> pripremljeni_podaci;
-    vector<string> imena_ulaznih_datoteka = {"Kopaonik.txt", "Zlatibor.txt", "Jahorina.txt"};
+    Data<string> raw_data;
+    Data<Student> proccessed_data;
 
-    thread th_reader(citac, imena_ulaznih_datoteka, ref(redovi_iz_ulaznih_datoteka));
-    thread th_writer(pisac, ref(pripremljeni_podaci));
-    thread th_workers[BR_RADNIKA];
+    thread th_reader(reader, "studenti.csv", ref(raw_data));
+    thread th_writer(writer, ref(proccessed_data));
+    thread th_workers[10];
 
     for(auto &th: th_workers){
-        th = thread(radnik, ref(redovi_iz_ulaznih_datoteka), ref(pripremljeni_podaci));
+        th = thread(proccessing_data, ref(raw_data), ref(proccessed_data));
     }
 
     th_reader.join();

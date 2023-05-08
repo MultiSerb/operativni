@@ -1,0 +1,40 @@
+//citanje
+ifstream ulazna_dat(ime_ulazne_dat);
+double donja_granica, gornja_granica;//podaci koje ces da uzimas
+string red_datoteke, broj;
+ if(ulazna_dat.is_open()) {
+  while(getline(ulazna_dat, red_datoteke)) {  // citanje datoteke red po red
+   istringstream red_datoteke_tok(red_datoteke);
+   if(getline(red_datoteke_tok, broj, ':'))  // citanje podataka odvojenih dvotackom
+	donja_granica = stod(broj);  // parsiranje broja iz stringa
+    else
+         continue; 
+   if(getline(red_datoteke_tok, broj, ':'))  // citanje podataka odvojenih dvotackom
+	 gornja_granica = stod(broj);  // parsiranje broja iz stringa
+      else
+         continue;  
+            
+    ulaz.dodaj({donja_granica, gornja_granica});  // slanje strukture sa dva polja double koristeci se {}
+		}
+
+     ulazna_dat.close();
+	} else
+		cerr << "CITAC: Nisam mogao da otvorim datoteku za citanje!\n";
+
+    ulaz.objaviKraj();  // citac je jedna jedina nit koja stvara podatke tako da je dovoljno da samo ona kada zavrsi posao objavi kraj
+//pisanje
+ofstream izlazna_dat(ime_izlazne_dat);
+    vector<double> brojevi;
+    if (izlazna_dat.is_open()) {
+
+        while (izlaz.preuzmi(brojevi)) {//ova fja preuzmi skuplja brojeve i pise ih u brojevi i vraca true/false
+            for (int i = 0; i < brojevi.size()-1; i++) {
+                izlazna_dat << brojevi[i] << ",";
+            }
+            izlazna_dat << brojevi[brojevi.size()-1] << endl;
+        }
+
+        izlazna_dat.close();
+    } else
+		cerr << "PISAC: Nisam mogao da otvorim datoteku za pisanje!\n";
+}

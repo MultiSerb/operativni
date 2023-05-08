@@ -1,0 +1,146 @@
+#include <iostream>
+#include <fstream>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <random>
+#include <queue>
+#include <sstream>
+#include <regex>
+#include <numeric>
+#include <chrono>
+#include <random>
+#include <functional>
+#include <cmath>
+
+#define MAX 100 //neka konstanta
+class Racunar {
+    private:
+     string HDD;
+list<Racunar> racunari; //racunari.push_back(r);
+public:
+       void setHDD(string d) {
+   HDD = d;
+        }
+string getHDD() {
+    return HDD;
+        }
+ Nesto(){}//konstruktor
+ ~Nesto(){}//destruktor
+//poziv u mainu
+Racunar r1;
+    r1.setHDD("Seagate");
+
+//vektor
+ vector<int> v = {3, 1, 4, 1, 5, 9, 2}; //v.push_back(98); v.insert(v.begin() + 2, 77);v.pop_back();
+ for (auto it = v.begin(); it != v.end(); it++) {
+    cout << *it << endl;//it->getCPU()ako treba neka metoda
+  }
+cout<<"Unesite stringove (ctrl-d za kraj):"<<endl;
+while(getline(cin,s)) { // dok se ne pritisne Ctrl+d (getline vraca false)
+        v.push_back(s); 
+    }
+
+//operacije sa vektorima
+ret_val.resize(n); //alociramo n mesta
+ copy(v_copy.begin(),v_copy.begin() + n, ret_val.begin());//kopira prvih n elemenata u drugi vektor
+  copy_if(v.begin(), v.end(), vv.begin(), div_three);//kopira prvi u drugi ako zadovoljava uslov
+  int r = accumulate(vv.begin(), vv.end(), 0);//ptavi vektor od pocetka do kraja tj neke lokacije
+int najveci = *max_element(brojevi.begin(), brojevi.end());//alg neki
+ sort(brojevi.begin(), brojevi.end(), poredi);//sortira po nekoj fji moze i bez fje
+min(*ita,*itb)); //(min vraca manji od 2 prosledjena elementa)brojevi ne vektori
+    }
+//mapa
+map<string, int> m = {{"abc", 1}, {"def", 2}, {"xyz", 907}};
+for (const auto &n : m) {
+    cout << "m[" << n.first << "] = " << n.second << endl;
+  }
+ m["abc"] = 5;
+while (getline(cin, engleska_rec))  
+        cout << "Prevod: " << recnik[engleska_rec] << endl; //u mapi se za uneseni kljuc (engleska_rec) pronalazi vrednost (odgovarajuca srpska rec) 
+
+//stek
+stack<int> s;
+  s.push(3);
+while (!s.empty()) {
+    cout << s.top() << endl;
+    s.pop();
+  }
+//matrica kao
+char screen[CW][CH];
+//
+  cout << "Konstruktor klase Nesto na adresi " << this << endl;//ako hocemo adresu
+cout << "Unesite 5 celih brojeva:" << endl;//print <<promenljiva<< ako trebamo 
+ for (int i = 0; i < 5; i++) {
+        cin >> broj;  //scanf
+        brojevi.push_back(broj); //ubacuje broj u vektor
+    } 
+int uradiNesto(int x,  function<int(int)> f){//f-ja koja prima f-ju
+    int y = f(x); 
+    return y;
+}
+//poziv
+  cout << uradiNesto(x, increment) << endl;
+//uradiNesto(x, [](int y) -> int {return y + 1;})
+//uradiNesto(x, [](auto y) -> auto {return y + 1;}) 
+// uradiNesto(x, [&val](int y) -> int {return y + val;}) 
+// uradiNesto(x, [&val](int y) -> int {val++;return y + val;})
+// uradiNesto(x, [val](int y) -> int {return y + val;})//ako ne menjamo val
+  Nesto* n = new Nesto();//obican pokazivac
+ unique_ptr<Nesto> n(new Nesto());//pokazuje samo na 1 .pametan (sam se brise) move(n)da ga premestis
+auto n = make_shared<Nesto>();//shared // broji na koliko pokazuje kad je br 0 delocira se memorija
+//vreme
+typedef chrono::high_resolution_clock hrc_t;
+hrc_t::time_point start = hrc_t::now();//iznad maina oba
+ default_random_engine generator;//umainu
+hrc_t::duration d = hrc_t::now() - start;//slucajni period vremena
+ generator.seed(d.count());
+   uniform_int_distribution<int> dist(1, 6);
+ cout << dist(generator) << endl;
+auto d6 = bind(dist, generator);
+uniform_real_distribution<double> rdist(0, 1);//nad realnim
+normal_distribution<double> rn(0, 1);//ovde nije ista verovatnoca
+//regex
+^\d{13}$//13 cifara ^pocetak $kraj
+(\S+)@uns\.ac\.rs//\s neki karakter bez razmaka + je 1 ili vise () jer se posebno tretira \ kod tacke su da se zna da su obicne tacke
+([[:upper:]])[[:alpha:]]+ ([[:alpha:]]+)//[[:upper:]] jedno veliko slovo [[:alpha:]]+ bilo koje slovo ponovljeno 1 ili vise puta; razmak je razmak kad stavimo u zagrade to je 1 pa 2 itd
+ auto const r1 = regex("^\\d{13}$");
+ auto const r2 = regex("(\\S+)@uns\\.ac\\.rs");
+  auto const r3 = regex("([[:upper:]])[[:alpha:]]+ ([[:alpha:]]+)");
+regex_match(s1a, r1)//da li string odgovara sablonu
+smatch mr2; 
+while(regex_search(s2a, mr2, r2)){ //Proizvodi ga ova regex_search funkcija.
+        cout << "Nasao mail " << mr2[1] << "@uns.ac.rs" << endl;
+        s2a = mr2.suffix();//Moramo da skratimo string da ne bi stalno isto naso
+    } 
+    string out = regex_replace(s3a, r3, "$2, $1.");
+ regex r(".+,.+,V=(\\d+)&P=(\\d+),.+");// Ime,Prezime,V=70&P=30,Beleska
+ fstream f("ulaz.txt"); ulazni fajl
+ while(!f.eof()){
+        f.getline(buff, 159, '\n');
+        string s(buff);
+        if(regex_search(s, m, r)){
+            v += atoi(m[1].str().c_str());
+            p += atoi(m[2].str().c_str());
+            count++;
+        }
+    }//prolazenje kroz fajl
+//niti
+typedef vector<double>::const_iterator ci;   
+void f(ci begin, ci end, double& zbir) {       
+    zbir=0;                                    
+    for(; begin != end; ++begin)                     
+        zbir += *begin; 
+}
+thread t1(f,  v.begin(), v.end(),ref(zbir));
+t1.join();da ne ide dalje dok se ne izvrsi t1
+  mutex m;
+unique_lock<mutex> l(m);
+this_thread::sleep_for(chrono::seconds(1));
+rand()%neki broj //izabere od 0 do broj-1 random
+condition_variable prvi_prosao;
+ .wait()
+ .notify_one()
+ .notify_all()
+
+
